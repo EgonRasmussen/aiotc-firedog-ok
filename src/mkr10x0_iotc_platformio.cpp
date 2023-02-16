@@ -115,7 +115,7 @@ void getTime()
 
     ntp.begin();
     ntp.update();
-    Serial.print(F("Current time: "));
+    Serial.print(F("Current UTC time: "));
     Serial.print(ntp.formattedTime("%d. %B %Y - "));
     Serial.println(ntp.formattedTime("%A %T"));
 
@@ -158,11 +158,8 @@ void handleDirectMethod(String topicStr, String payloadStr)
         digitalWrite(LED_BUILTIN, LOW);
 
         // output the message as morse code
-        JSON_Value *root_value = json_parse_string(payloadStr.c_str());
-        JSON_Object *root_obj = json_value_get_object(root_value);
-        const char *msg = json_object_get_string(root_obj, "displayedValue");
+        const char *msg = payloadStr.c_str();
         morse_encodeAndFlash(msg);
-        json_value_free(root_value);
     }
 }
 
@@ -338,7 +335,7 @@ void readSensors()
 //////////////////////////////////////////////// SETUP ////////////////////////////////////////////////////////////
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(9600);
 
     // uncomment this line to add a small delay to allow time for connecting serial moitor to get full debug output
     delay(5000);
@@ -375,7 +372,7 @@ void setup()
     char hostName[64] = {0};
     getHubHostName((char *)iotc_scopeId, (char *)iotc_deviceId, (char *)iotc_deviceKey, hostName);
     iothubHost = hostName;
-    // iothubHost = iotc_hubHost;
+    Serial.print("IoT HostName: ");Serial.println(hostName);
 
     // create SAS token and user name for connecting to MQTT broker
     String url = iothubHost + urlEncode(String((char *)F("/devices/") + deviceId).c_str());

@@ -86,8 +86,8 @@ error_exit:
       if (index2 == -1) goto error_exit;
       tmpBuffer[index2] = 0;
       strcpy(operationId, tmpBuffer + index);
-      Serial.print("OperationId:");
-      Serial.println(operationId);
+      // Serial.print("OperationId:");
+      // Serial.println(operationId);
       client.stop();
     }
   } else {
