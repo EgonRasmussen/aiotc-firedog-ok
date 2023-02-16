@@ -39,9 +39,14 @@
 #include "./morse_code.h"
 #include "./utils.h"
 
-int getHubHostName(char *scopeId, char* deviceId, char* key, char *hostName);
+int getHubHostName(char *scopeId, char *deviceId, char *key, char *hostName);
 
-enum dht_type {simulated, dht22, dht11}; 
+enum dht_type
+{
+    simulated,
+    dht22,
+    dht11
+};
 
 #if defined DHT22_TYPE
 SimpleDHT22 dhtSensor(pinDHT);
@@ -67,9 +72,9 @@ bool mqttConnected = false;
 time_t this_second = 0;
 time_t checkTime = 1300000000;
 
-#define TELEMETRY_SEND_INTERVAL 5000  // telemetry data sent every 5 seconds
-#define PROPERTY_SEND_INTERVAL  15000 // property data sent every 15 seconds
-#define SENSOR_READ_INTERVAL  2500    // read sensors every 2.5 seconds
+#define TELEMETRY_SEND_INTERVAL 5000 // telemetry data sent every 5 seconds
+#define PROPERTY_SEND_INTERVAL 15000 // property data sent every 15 seconds
+#define SENSOR_READ_INTERVAL 2500    // read sensors every 2.5 seconds
 
 long lastTelemetryMillis = 0;
 long lastPropertyMillis = 0;
@@ -104,7 +109,8 @@ RTCZero rtc;
 #include "./iotc_dps.h"
 
 // get the time from NTP and set the real-time clock on the MKR10x0
-void getTime() {
+void getTime()
+{
     Serial.println(F("Getting the time from time service: "));
 
     ntp.begin();
@@ -118,71 +124,87 @@ void getTime() {
     timeSet = true;
 }
 
-void acknowledgeSetting(const char* propertyKey, const char* propertyValue, int version) {
-        // for IoT Central need to return acknowledgement
-        const static char* PROGMEM responseTemplate = "{\"%s\":{\"value\":%s,\"statusCode\":%d,\"status\":\"%s\",\"desiredVersion\":%d}}";
-        char payload[1024];
-        sprintf(payload, responseTemplate, propertyKey, propertyValue, 200, F("completed"), version);
-        Serial_printf("Sending acknowledgement: %s\n\n", payload);
-        String topic = (String)IOT_TWIN_REPORTED_PROPERTY;
-        char buff[20];
-        topic.replace(F("{request_id}"), itoa(requestId, buff, 10));
-        mqtt_client->publish(topic.c_str(), payload);
-        requestId++;
+void acknowledgeSetting(const char *propertyKey, const char *propertyValue, int version)
+{
+    // for IoT Central need to return acknowledgement
+    const static char *PROGMEM responseTemplate = "{\"%s\":{\"value\":%s,\"statusCode\":%d,\"status\":\"%s\",\"desiredVersion\":%d}}";
+    char payload[1024];
+    sprintf(payload, responseTemplate, propertyKey, propertyValue, 200, F("completed"), version);
+    Serial_printf("Sending acknowledgement: %s\n\n", payload);
+    String topic = (String)IOT_TWIN_REPORTED_PROPERTY;
+    char buff[20];
+    topic.replace(F("{request_id}"), itoa(requestId, buff, 10));
+    mqtt_client->publish(topic.c_str(), payload);
+    requestId++;
 }
 
-void handleDirectMethod(String topicStr, String payloadStr) {
+void handleDirectMethod(String topicStr, String payloadStr)
+{
     String msgId = topicStr.substring(topicStr.indexOf("$RID=") + 5);
     String methodName = topicStr.substring(topicStr.indexOf(F("$IOTHUB/METHODS/POST/")) + 21, topicStr.indexOf("/?$"));
-    Serial_printf((char*)F("Direct method call:\n\tMethod Name: %s\n\tParameters: %s\n"), methodName.c_str(), payloadStr.c_str());
-    if (strcmp(methodName.c_str(), "ECHO") == 0) {
+    Serial_printf((char *)F("Direct method call:\n\tMethod Name: %s\n\tParameters: %s\n"), methodName.c_str(), payloadStr.c_str());
+    if (strcmp(methodName.c_str(), "ECHO") == 0)
+    {
         // acknowledge receipt of the command
         String response_topic = (String)IOT_DIRECT_METHOD_RESPONSE_TOPIC;
         char buff[20];
         response_topic.replace(F("{request_id}"), msgId);
-        response_topic.replace(F("{status}"), F("200"));  //OK
+        response_topic.replace(F("{status}"), F("200")); // OK
         mqtt_client->publish(response_topic.c_str(), "");
 
-        digitalWrite(LED_BUILTIN, HIGH);delay(1000);
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(1000);
         digitalWrite(LED_BUILTIN, LOW);
 
         // output the message as morse code
         JSON_Value *root_value = json_parse_string(payloadStr.c_str());
         JSON_Object *root_obj = json_value_get_object(root_value);
-        const char* msg = json_object_get_string(root_obj, "displayedValue");
+        const char *msg = json_object_get_string(root_obj, "displayedValue");
         morse_encodeAndFlash(msg);
         json_value_free(root_value);
     }
 }
 
-void handleCloud2DeviceMessage(String topicStr, String payloadStr) {
-    Serial_printf((char*)F("Cloud to device call:\n\tPayload: %s\n"), payloadStr.c_str());
+void handleCloud2DeviceMessage(String topicStr, String payloadStr)
+{
+    Serial_printf((char *)F("Cloud to device call:\n\tPayload: %s\n"), payloadStr.c_str());
 }
 
-void handleTwinPropertyChange(String topicStr, String payloadStr) {
+void handleTwinPropertyChange(String topicStr, String payloadStr)
+{
     // read the property values sent using JSON parser
     JSON_Value *root_value = json_parse_string(payloadStr.c_str());
     JSON_Object *root_obj = json_value_get_object(root_value);
-    const char* propertyKey = json_object_get_name(root_obj, 0);
+    const char *propertyKey = json_object_get_name(root_obj, 0);
     double propertyValueNum;
     double propertyValueBool;
     double version;
-    if (strcmp(propertyKey, "fanSpeed") == 0 || strcmp(propertyKey, "setVoltage") == 0 || strcmp(propertyKey, "setCurrent") == 0 || strcmp(propertyKey, "activateIR") == 0) {
-        JSON_Object* valObj = json_object_get_object(root_obj, propertyKey);
-        if (strcmp(propertyKey, "activateIR") == 0) {
+    if (strcmp(propertyKey, "fanSpeed") == 0 || strcmp(propertyKey, "setVoltage") == 0 || strcmp(propertyKey, "setCurrent") == 0 || strcmp(propertyKey, "activateIR") == 0)
+    {
+        JSON_Object *valObj = json_object_get_object(root_obj, propertyKey);
+        if (strcmp(propertyKey, "activateIR") == 0)
+        {
             propertyValueBool = json_object_get_boolean(valObj, "value");
-        } else {
+        }
+        else
+        {
             propertyValueNum = json_object_get_number(valObj, "value");
         }
         version = json_object_get_number(root_obj, "$version");
         char propertyValueStr[8];
-        if (strcmp(propertyKey, "activateIR") == 0) {
-            if (propertyValueBool) {
+        if (strcmp(propertyKey, "activateIR") == 0)
+        {
+            if (propertyValueBool)
+            {
                 strcpy(propertyValueStr, "true");
-            } else {
+            }
+            else
+            {
                 strcpy(propertyValueStr, "false");
             }
-        } else {
+        }
+        else
+        {
             itoa(propertyValueNum, propertyValueStr, 10);
         }
         Serial_printf("\n%s setting change received with value: %s\n", propertyKey, propertyValueStr);
@@ -192,41 +214,57 @@ void handleTwinPropertyChange(String topicStr, String payloadStr) {
 }
 
 // callback for MQTT subscriptions
-void callback(char* topic, byte* payload, unsigned int length) {
+void callback(char *topic, byte *payload, unsigned int length)
+{
     String topicStr = (String)topic;
     topicStr.toUpperCase();
-    String payloadStr = (String)((char*)payload);
+    String payloadStr = (String)((char *)payload);
     payloadStr.remove(length);
 
-    if (topicStr.startsWith(F("$IOTHUB/METHODS/POST/"))) { // direct method callback
+    if (topicStr.startsWith(F("$IOTHUB/METHODS/POST/")))
+    { // direct method callback
         handleDirectMethod(topicStr, payloadStr);
-    } else if (topicStr.indexOf(F("/MESSAGES/DEVICEBOUND/")) > -1) { // cloud to device message
+    }
+    else if (topicStr.indexOf(F("/MESSAGES/DEVICEBOUND/")) > -1)
+    { // cloud to device message
         handleCloud2DeviceMessage(topicStr, payloadStr);
-    } else if (topicStr.startsWith(F("$IOTHUB/TWIN/PATCH/PROPERTIES/DESIRED"))) {  // digital twin desired property change
+    }
+    else if (topicStr.startsWith(F("$IOTHUB/TWIN/PATCH/PROPERTIES/DESIRED")))
+    { // digital twin desired property change
         handleTwinPropertyChange(topicStr, payloadStr);
-    } else if (topicStr.startsWith(F("$IOTHUB/TWIN/RES"))) { // digital twin response
+    }
+    else if (topicStr.startsWith(F("$IOTHUB/TWIN/RES")))
+    { // digital twin response
         int result = atoi(topicStr.substring(topicStr.indexOf(F("/RES/")) + 5, topicStr.indexOf(F("/?$"))).c_str());
         int msgId = atoi(topicStr.substring(topicStr.indexOf(F("$RID=")) + 5, topicStr.indexOf(F("$VERSION=")) - 1).c_str());
-        if (msgId == twinRequestId) {
+        if (msgId == twinRequestId)
+        {
             // twin request processing
             twinRequestId = -1;
             // output limited to 128 bytes so this output may be truncated
-            Serial_printf((char*)F("Current state of device twin:\n\t%s"), payloadStr.c_str());
+            Serial_printf((char *)F("Current state of device twin:\n\t%s"), payloadStr.c_str());
             Serial.println();
-        } else {
-            if (result >= 200 && result < 300) {
-                Serial_printf((char*)F("--> IoT Hub acknowledges successful receipt of twin property: %d\n"), msgId);
-            } else {
-                Serial_printf((char*)F("--> IoT Hub could not process twin property: %d, error: %d\n"), msgId, result);
+        }
+        else
+        {
+            if (result >= 200 && result < 300)
+            {
+                Serial_printf((char *)F("--> IoT Hub acknowledges successful receipt of twin property: %d\n"), msgId);
+            }
+            else
+            {
+                Serial_printf((char *)F("--> IoT Hub could not process twin property: %d, error: %d\n"), msgId, result);
             }
         }
-    } else { // unknown message
-        Serial_printf((char*)F("Unknown message arrived [%s]\nPayload contains: %s"), topic, payloadStr.c_str());
+    }
+    else
+    { // unknown message
+        Serial_printf((char *)F("Unknown message arrived [%s]\nPayload contains: %s"), topic, payloadStr.c_str());
     }
 }
 
 // connect to Azure IoT Hub via MQTT
-void connectMQTT(String deviceId, String username, String password) 
+void connectMQTT(String deviceId, String username, String password)
 {
     WiFiDrv::digitalWrite(26, LOW);  // RED LED
     WiFiDrv::digitalWrite(27, HIGH); // BLUE LED
@@ -234,12 +272,15 @@ void connectMQTT(String deviceId, String username, String password)
 
     Serial.println(F("Starting IoT Hub connection"));
     int retry = 0;
-    while(retry < 10 && !mqtt_client->connected()) 
-    {     
-        if (mqtt_client->connect(deviceId.c_str(), username.c_str(), password.c_str())) {
-                Serial.println(F("===> mqtt connected"));
-                mqttConnected = true;
-        } else {
+    while (retry < 10 && !mqtt_client->connected())
+    {
+        if (mqtt_client->connect(deviceId.c_str(), username.c_str(), password.c_str()))
+        {
+            Serial.println(F("===> mqtt connected"));
+            mqttConnected = true;
+        }
+        else
+        {
             Serial.print(F("---> mqtt failed, rc="));
             Serial.println(mqtt_client->state());
             delay(2000);
@@ -251,7 +292,8 @@ void connectMQTT(String deviceId, String username, String password)
 }
 
 // create an IoT Hub SAS token for authentication
-String createIotHubSASToken(char *key, String url, long expire){
+String createIotHubSASToken(char *key, String url, long expire)
+{
     url.toLowerCase();
     String stringToSign = url + "\n" + String(expire);
     int keyLength = strlen(key);
@@ -262,41 +304,45 @@ String createIotHubSASToken(char *key, String url, long expire){
     base64_decode(decodedKey, key, keyLength);
 
     Sha256 *sha256 = new Sha256();
-    sha256->initHmac((const uint8_t*)decodedKey, (size_t)decodedKeyLength);
+    sha256->initHmac((const uint8_t *)decodedKey, (size_t)decodedKeyLength);
     sha256->print(stringToSign);
-    char* sign = (char*) sha256->resultHmac();
+    char *sign = (char *)sha256->resultHmac();
     int encodedSignLen = base64_enc_len(HASH_LENGTH);
     char encodedSign[encodedSignLen];
     base64_encode(encodedSign, sign, HASH_LENGTH);
-    delete(sha256);
+    delete (sha256);
 
-    return (char*)F("SharedAccessSignature sr=") + url + (char*)F("&sig=") + urlEncode((const char*)encodedSign) + (char*)F("&se=") + String(expire);
+    return (char *)F("SharedAccessSignature sr=") + url + (char *)F("&sig=") + urlEncode((const char *)encodedSign) + (char *)F("&se=") + String(expire);
 }
 
 // reads the value from the DHT sensor if present else generates a random value
-void readSensors() {
+void readSensors()
+{
     dieNumberValue = random(1, 7);
 
-    #if defined DHT11_TYPE || defined DHT22_TYPE
+#if defined DHT11_TYPE || defined DHT22_TYPE
     int err = SimpleDHTErrSuccess;
-    if ((err = dhtSensor.read2(&tempValue, &humidityValue, NULL)) != SimpleDHTErrSuccess) {
-        Serial_printf("Read DHT sensor failed (Error:%d)", err); 
+    if ((err = dhtSensor.read2(&tempValue, &humidityValue, NULL)) != SimpleDHTErrSuccess)
+    {
+        Serial_printf("Read DHT sensor failed (Error:%d)", err);
         tempValue = -999.99;
         humidityValue = -999.99;
     }
-    #else
+#else
     tempValue = random(0, 7500) / 100.0;
     humidityValue = random(0, 9999) / 100.0;
-    #endif
+#endif
 }
 
-void setup() {
+//////////////////////////////////////////////// SETUP ////////////////////////////////////////////////////////////
+void setup()
+{
     Serial.begin(115200);
 
     // uncomment this line to add a small delay to allow time for connecting serial moitor to get full debug output
-    delay(5000); 
- 
-    Serial_printf((char*)F("Hello, starting up the %s device\n"), DEVICE_NAME);
+    delay(5000);
+
+    Serial_printf((char *)F("Hello, starting up the %s device\n"), DEVICE_NAME);
 
     // RGB LEDS on board
     WiFiDrv::pinMode(25, OUTPUT);
@@ -308,12 +354,12 @@ void setup() {
     randomSeed(millis());
 
     // attempt to connect to Wifi network:
-    Serial.print((char*)F("WiFi Firmware version is "));
+    Serial.print((char *)F("WiFi Firmware version is "));
     Serial.println(WiFi.firmwareVersion());
     int status = WL_IDLE_STATUS;
-    while ( status != WL_CONNECTED) 
+    while (status != WL_CONNECTED)
     {
-        Serial_printf((char*)F("Attempting to connect to Wi-Fi SSID: %s \n"), wifi_ssid);
+        Serial_printf((char *)F("Attempting to connect to Wi-Fi SSID: %s \n"), wifi_ssid);
         WiFiDrv::digitalWrite(26, HIGH); // RED LED
         status = WiFi.begin(wifi_ssid, wifi_password);
         delay(5000);
@@ -326,16 +372,16 @@ void setup() {
     deviceId = iotc_deviceId;
     sharedAccessKey = iotc_deviceKey;
     char hostName[64] = {0};
-    getHubHostName((char*)iotc_scopeId, (char*)iotc_deviceId, (char*)iotc_deviceKey, hostName);
+    getHubHostName((char *)iotc_scopeId, (char *)iotc_deviceId, (char *)iotc_deviceKey, hostName);
     iothubHost = hostName;
-    //iothubHost = iotc_hubHost;
+    // iothubHost = iotc_hubHost;
 
     // create SAS token and user name for connecting to MQTT broker
-    String url = iothubHost + urlEncode(String((char*)F("/devices/") + deviceId).c_str());
+    String url = iothubHost + urlEncode(String((char *)F("/devices/") + deviceId).c_str());
     char *devKey = (char *)sharedAccessKey.c_str();
     long expire = rtc.getEpoch() + 864000;
     String sasToken = createIotHubSASToken(devKey, url, expire);
-    String username = iothubHost + "/" + deviceId + (char*)F("/api-version=2016-11-14");
+    String username = iothubHost + "/" + deviceId + (char *)F("/api-version=2016-11-14");
 
     // connect to the IoT Hub MQTT broker
     wifiClient.connect(iothubHost.c_str(), 8883);
@@ -344,8 +390,8 @@ void setup() {
     mqtt_client->setCallback(callback);
 
     // add subscriptions
-    mqtt_client->subscribe(IOT_TWIN_RESULT_TOPIC);  // twin results
-    mqtt_client->subscribe(IOT_TWIN_DESIRED_PATCH_TOPIC);  // twin desired properties
+    mqtt_client->subscribe(IOT_TWIN_RESULT_TOPIC);        // twin results
+    mqtt_client->subscribe(IOT_TWIN_DESIRED_PATCH_TOPIC); // twin desired properties
     String c2dMessageTopic = IOT_C2D_TOPIC;
     c2dMessageTopic.replace(F("{device_id}"), deviceId);
     mqtt_client->subscribe(c2dMessageTopic.c_str());  // cloud to device messages
@@ -364,19 +410,25 @@ void setup() {
     lastPropertyMillis = millis();
 }
 
-// main processing loop
-void loop() {
-    // give the MQTT handler time to do it's thing
+///////////////////////////////////////////  LOOP ////////////////////////////////////////////////////////
+void loop()
+{
     mqtt_client->loop();
 
-    // read the sensor values
-    if (millis() - lastSensorReadMillis > SENSOR_READ_INTERVAL) {
+    // read the sensor values and green LED blink every 2.5 seconds
+    if (mqtt_client->connected() && millis() - lastSensorReadMillis > SENSOR_READ_INTERVAL)
+    {
         readSensors();
+        WiFiDrv::digitalWrite(25, HIGH);
+        delay(50);
+        WiFiDrv::digitalWrite(25, LOW);
+
         lastSensorReadMillis = millis();
     }
-    
+
     // send telemetry values every 5 seconds
-    if (mqtt_client->connected() && millis() - lastTelemetryMillis > TELEMETRY_SEND_INTERVAL) {
+    if (mqtt_client->connected() && millis() - lastTelemetryMillis > TELEMETRY_SEND_INTERVAL)
+    {
         Serial.println(F("Sending telemetry ..."));
         String topic = (String)IOT_EVENT_TOPIC;
         topic.replace(F("{device_id}"), deviceId);
@@ -391,7 +443,8 @@ void loop() {
     }
 
     // send a property update every 15 seconds
-    if (mqtt_client->connected() && millis() - lastPropertyMillis > PROPERTY_SEND_INTERVAL) {
+    if (mqtt_client->connected() && millis() - lastPropertyMillis > PROPERTY_SEND_INTERVAL)
+    {
         Serial.println(F("Sending digital twin property ..."));
 
         String topic = (String)IOT_TWIN_REPORTED_PROPERTY;
