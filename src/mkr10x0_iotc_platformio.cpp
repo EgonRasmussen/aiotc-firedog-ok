@@ -22,6 +22,7 @@
 #include <SimpleDHT.h>
 #include <NTP.h>
 #include <Base64.h>
+#include <ArduinoJson.h>
 
 /*  You need to go into this file and change this line from:
       #define MQTT_MAX_PACKET_SIZE 128
@@ -72,8 +73,8 @@ time_t this_second = 0;
 time_t checkTime = 1300000000;
 
 #define TELEMETRY_SEND_INTERVAL 15000 // telemetry data sent every 5 seconds
-#define PROPERTY_SEND_INTERVAL 30000 // property data sent every 15 seconds
-#define SENSOR_READ_INTERVAL 2500    // read sensors every 2.5 seconds
+#define PROPERTY_SEND_INTERVAL 30000  // property data sent every 15 seconds
+#define SENSOR_READ_INTERVAL 2500     // read sensors every 2.5 seconds
 
 long lastTelemetryMillis = 0;
 long lastPropertyMillis = 0;
@@ -123,7 +124,7 @@ void getTime()
     timeSet = true;
 }
 
-void acknowledgeSetting(const char *propertyKey, const char *propertyValue, int version)
+void acknowledgeSetting(String propertyKey, String propertyValue, int version)
 {
     // for IoT Central need to return acknowledgement
     const static char *PROGMEM responseTemplate = "{\"%s\":{\"value\":%s,\"statusCode\":%d,\"status\":\"%s\",\"desiredVersion\":%d}}";
@@ -169,45 +170,93 @@ void handleCloud2DeviceMessage(String topicStr, String payloadStr)
 
 void handleTwinPropertyChange(String topicStr, String payloadStr)
 {
-    // read the property values sent using JSON parser
-    JSON_Value *root_value = json_parse_string(payloadStr.c_str());
-    JSON_Object *root_obj = json_value_get_object(root_value);
-    const char *propertyKey = json_object_get_name(root_obj, 0);
-    double propertyValueNum;
-    double propertyValueBool;
-    double version;
-    if (strcmp(propertyKey, "fanSpeed") == 0 || strcmp(propertyKey, "setVoltage") == 0 || strcmp(propertyKey, "setCurrent") == 0 || strcmp(propertyKey, "activateIR") == 0)
+    //const size_t capacity = JSON_OBJECT_SIZE(5) + JSON_ARRAY_SIZE(2) + 60;
+    StaticJsonDocument<200> doc;
+
+    const char* propertyKey;
+    const char* propertyValueStr;
+    int propertyValueNum;
+    bool propertyValueBool;
+    int version;
+
+    DeserializationError error = deserializeJson(doc, payloadStr);
+
+    if (error)
     {
-        JSON_Object *valObj = json_object_get_object(root_obj, propertyKey);
-        if (strcmp(propertyKey, "activateIR") == 0)
-        {
-            propertyValueBool = json_object_get_boolean(valObj, "value");
-        }
-        else
-        {
-            propertyValueNum = json_object_get_number(valObj, "value");
-        }
-        version = json_object_get_number(root_obj, "$version");
-        char propertyValueStr[8];
-        if (strcmp(propertyKey, "activateIR") == 0)
-        {
-            if (propertyValueBool)
-            {
-                strcpy(propertyValueStr, "true");
-            }
-            else
-            {
-                strcpy(propertyValueStr, "false");
-            }
-        }
-        else
-        {
-            itoa(propertyValueNum, propertyValueStr, 10);
-        }
-        Serial_printf("\n%s setting change received with value: %s\n", propertyKey, propertyValueStr);
-        acknowledgeSetting(propertyKey, propertyValueStr, version);
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+        return;
     }
-    json_value_free(root_value);
+
+    // Get a reference to the root object 
+    JsonObject obj = doc.as<JsonObject>();
+
+    if (obj.containsKey("fanSpeed"))
+    {
+        propertyKey = "fanSpeed";
+        propertyValueNum = doc["fanSpeed"];
+    }
+    else if (obj.containsKey("setVoltage"))
+    {
+        propertyKey = "setVoltage";
+        propertyValueNum = doc["setVoltage"];
+    }
+    else if (obj.containsKey("setCurrent"))
+    {
+        propertyKey = "setCurrent";
+        propertyValueNum = doc["setCurrent"];
+    }
+    else if (obj.containsKey("activateIR"))
+    {
+        propertyKey = "activateIR";
+        propertyValueStr = doc["activateIR"];
+        propertyValueBool = doc["activateIR"] != '0';
+    }
+    else
+    {
+         Serial.println("UnKnown!");
+    }
+
+    version = doc["$version"];
+
+    Serial.print("Version: ");Serial.println(version);
+
+    Serial_printf("\n%s setting change received with value: %n\n", propertyKey, propertyValueNum);
+
+    acknowledgeSetting(String(propertyKey), String(propertyValueStr), version);
+
+    // if (strcmp(propertyKey, "fanSpeed") == 0 || strcmp(propertyKey, "setVoltage") == 0 || strcmp(propertyKey, "setCurrent") == 0 || strcmp(propertyKey, "activateIR") == 0)
+    // {
+    //     JSON_Object *valObj = json_object_get_object(root_obj, propertyKey);
+    //     if (strcmp(propertyKey, "activateIR") == 0)
+    //     {
+    //         propertyValueBool = json_object_get_boolean(valObj, "value");
+    //     }
+    //     else
+    //     {
+    //         propertyValueNum = json_object_get_number(valObj, "value");
+    //     }
+    //     version = json_object_get_number(root_obj, "$version");
+    //     char propertyValueStr[8];
+    //     if (strcmp(propertyKey, "activateIR") == 0)
+    //     {
+    //         if (propertyValueBool)
+    //         {
+    //             strcpy(propertyValueStr, "true");
+    //         }
+    //         else
+    //         {
+    //             strcpy(propertyValueStr, "false");
+    //         }
+    //     }
+    //     else
+    //     {
+    //         itoa(propertyValueNum, propertyValueStr, 10);
+    //     }
+    //     Serial_printf("\n%s setting change received with value: %s\n", propertyKey, propertyValueStr);
+    //     acknowledgeSetting(propertyKey, propertyValueStr, version);
+    // }
+    // json_value_free(root_value);
 }
 
 // callback for MQTT subscriptions
@@ -371,7 +420,8 @@ void setup()
     char hostName[64] = {0};
     getHubHostName((char *)iotc_scopeId, (char *)iotc_deviceId, (char *)iotc_deviceKey, hostName);
     iothubHost = hostName;
-    Serial.print("IoT HostName: ");Serial.println(hostName);
+    Serial.print("IoT HostName: ");
+    Serial.println(hostName);
 
     // create SAS token and user name for connecting to MQTT broker
     String url = iothubHost + urlEncode(String((char *)F("/devices/") + deviceId).c_str());
