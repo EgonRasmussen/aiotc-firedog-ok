@@ -1,4 +1,7 @@
-// Virker med WiFiNINA firmware v. 1.5.0
+/*
+    Virker med WiFiNINA firmware v. 1.5.0
+    Tilsyneladende behøver man ikke installere ekstra rodcertifikater
+*/ 
 
 // Azure IoT Central device information
 static const char PROGMEM iotc_scopeId[] = "0ne0092420A";

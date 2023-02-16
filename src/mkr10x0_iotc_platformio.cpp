@@ -138,6 +138,7 @@ void acknowledgeSetting(const char *propertyKey, const char *propertyValue, int 
     requestId++;
 }
 
+// In Device template, create a Command called ECHO with a String parameter called displayedValue.
 void handleDirectMethod(String topicStr, String payloadStr)
 {
     String msgId = topicStr.substring(topicStr.indexOf("$RID=") + 5);
