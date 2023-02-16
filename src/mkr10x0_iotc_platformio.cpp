@@ -20,6 +20,8 @@
 #include <WiFiUdp.h>
 #include <RTCZero.h>
 #include <SimpleDHT.h>
+#include <NTP.h>
+#include <Base64.h>
 
 /*  You need to go into this file and change this line from:
       #define MQTT_MAX_PACKET_SIZE 128
@@ -31,10 +33,7 @@
 // change the values for Wi-Fi, Azure IoT Central device, and DHT sensor in this file
 #include "./configure.h"
 
-// this is an easy to use NTP Arduino library by Stefan Staub - updates can be found here https://github.com/sstaub/NTP
-#include "./ntp.h"
 #include "./sha256.h"
-#include "./base64.h"
 #include "./parson.h"
 #include "./morse_code.h"
 #include "./utils.h"
@@ -72,8 +71,8 @@ bool mqttConnected = false;
 time_t this_second = 0;
 time_t checkTime = 1300000000;
 
-#define TELEMETRY_SEND_INTERVAL 5000 // telemetry data sent every 5 seconds
-#define PROPERTY_SEND_INTERVAL 15000 // property data sent every 15 seconds
+#define TELEMETRY_SEND_INTERVAL 15000 // telemetry data sent every 5 seconds
+#define PROPERTY_SEND_INTERVAL 30000 // property data sent every 15 seconds
 #define SENSOR_READ_INTERVAL 2500    // read sensors every 2.5 seconds
 
 long lastTelemetryMillis = 0;

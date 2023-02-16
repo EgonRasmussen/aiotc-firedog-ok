@@ -1,51 +1,6 @@
-// convert a float to a string as Arduino lacks an ftoa function
-// char *dtostrf(double value, int width, unsigned int precision, char *result)
-// {
-//     int decpt, sign, reqd, pad;
-//     const char *s, *e;
-//     char *p;
-//     s = fcvt(value, precision, &decpt, &sign);
-//     if (precision == 0 && decpt == 0) {
-//         s = (*s < '5') ? "0" : "1";
-//         reqd = 1;
-//     } else {
-//         reqd = strlen(s);
-//         if (reqd > decpt) reqd++;
-//         if (decpt == 0) reqd++;
-//     }
-//     if (sign) reqd++;
-//     p = result;
-//     e = p + reqd;
-//     pad = width - reqd;
-//     if (pad > 0) {
-//         e += pad;
-//         while (pad-- > 0) *p++ = ' ';
-//     }
-//     if (sign) *p++ = '-';
-//     if (decpt <= 0 && precision > 0) {
-//         *p++ = '0';
-//         *p++ = '.';
-//         e++;
-//         while ( decpt < 0 ) {
-//             decpt++;
-//             *p++ = '0';
-//         }
-//     }    
-//     while (p < e) {
-//         *p++ = *s++;
-//         if (p == e) break;
-//         if (--decpt == 0) *p++ = '.';
-//     }
-//     if (width < 0) {
-//         pad = (reqd + width) * -1;
-//         while (pad-- > 0) *p++ = ' ';
-//     }
-//     *p = 0;
-//     return result;
-// }
-
 // implementation of printf for use in Arduino sketch
-void Serial_printf(char* fmt, ...) {
+void Serial_printf(char* fmt, ...) 
+{
     char buf[256]; // resulting string limited to 128 chars
     va_list args;
     va_start (args, fmt );
@@ -75,7 +30,8 @@ String urlEncode(const char* msg)
     return encodedMsg;
 }
 
-int32_t indexOf(const char* buffer, size_t length, const char* look_for, size_t look_for_length, int32_t start_index) {
+int32_t indexOf(const char* buffer, size_t length, const char* look_for, size_t look_for_length, int32_t start_index) 
+{
     if (look_for_length > length) {
         return -1;
     }

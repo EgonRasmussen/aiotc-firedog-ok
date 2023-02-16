@@ -19,7 +19,4 @@ static char PROGMEM wifi_password[] = "15711571";
 //#define DHT22_TYPE
 
 // for DHT11/22, 
-//   VCC: 5V or 3V
-//   GND: GND
-//   DATA: 2
 int pinDHT = 2;
