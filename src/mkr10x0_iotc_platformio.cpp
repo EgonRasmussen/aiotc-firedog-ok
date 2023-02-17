@@ -35,7 +35,6 @@
 #include "./configure.h"
 
 #include "./sha256.h"
-#include "./parson.h"
 #include "./morse_code.h"
 #include "./utils.h"
 
@@ -124,7 +123,7 @@ void getTime()
     timeSet = true;
 }
 
-void acknowledgeSetting(String propertyKey, String propertyValue, int version)
+void acknowledgeSetting(const char* propertyKey, const char* propertyValue, int version)
 {
     // for IoT Central need to return acknowledgement
     const static char *PROGMEM responseTemplate = "{\"%s\":{\"value\":%s,\"statusCode\":%d,\"status\":\"%s\",\"desiredVersion\":%d}}";
@@ -170,11 +169,12 @@ void handleCloud2DeviceMessage(String topicStr, String payloadStr)
 
 void handleTwinPropertyChange(String topicStr, String payloadStr)
 {
-    //const size_t capacity = JSON_OBJECT_SIZE(5) + JSON_ARRAY_SIZE(2) + 60;
+    Serial.println(payloadStr);
+    // const size_t capacity = JSON_OBJECT_SIZE(5) + JSON_ARRAY_SIZE(2) + 60;
     StaticJsonDocument<200> doc;
 
-    const char* propertyKey;
-    const char* propertyValueStr;
+    String propertyKey;
+    String propertyValueStr;
     int propertyValueNum;
     bool propertyValueBool;
     int version;
@@ -188,75 +188,39 @@ void handleTwinPropertyChange(String topicStr, String payloadStr)
         return;
     }
 
-    // Get a reference to the root object 
     JsonObject obj = doc.as<JsonObject>();
 
     if (obj.containsKey("fanSpeed"))
     {
         propertyKey = "fanSpeed";
         propertyValueNum = doc["fanSpeed"];
+        propertyValueStr = String(propertyValueNum);
     }
     else if (obj.containsKey("setVoltage"))
     {
         propertyKey = "setVoltage";
         propertyValueNum = doc["setVoltage"];
+        propertyValueStr = String(propertyValueNum);
     }
     else if (obj.containsKey("setCurrent"))
     {
         propertyKey = "setCurrent";
         propertyValueNum = doc["setCurrent"];
+        propertyValueStr = String(propertyValueNum);
     }
     else if (obj.containsKey("activateIR"))
     {
-        propertyKey = "activateIR";
-        propertyValueStr = doc["activateIR"];
-        propertyValueBool = doc["activateIR"] != '0';
+     propertyKey = "activateIR";
+     propertyValueBool = doc["activateIR"];
+     propertyValueStr = doc["activateIR"] ? "true" : "false";
     }
     else
     {
-         Serial.println("UnKnown!");
+        Serial.println("UnKnown!");
     }
 
     version = doc["$version"];
-
-    Serial.print("Version: ");Serial.println(version);
-
-    Serial_printf("\n%s setting change received with value: %n\n", propertyKey, propertyValueNum);
-
-    acknowledgeSetting(String(propertyKey), String(propertyValueStr), version);
-
-    // if (strcmp(propertyKey, "fanSpeed") == 0 || strcmp(propertyKey, "setVoltage") == 0 || strcmp(propertyKey, "setCurrent") == 0 || strcmp(propertyKey, "activateIR") == 0)
-    // {
-    //     JSON_Object *valObj = json_object_get_object(root_obj, propertyKey);
-    //     if (strcmp(propertyKey, "activateIR") == 0)
-    //     {
-    //         propertyValueBool = json_object_get_boolean(valObj, "value");
-    //     }
-    //     else
-    //     {
-    //         propertyValueNum = json_object_get_number(valObj, "value");
-    //     }
-    //     version = json_object_get_number(root_obj, "$version");
-    //     char propertyValueStr[8];
-    //     if (strcmp(propertyKey, "activateIR") == 0)
-    //     {
-    //         if (propertyValueBool)
-    //         {
-    //             strcpy(propertyValueStr, "true");
-    //         }
-    //         else
-    //         {
-    //             strcpy(propertyValueStr, "false");
-    //         }
-    //     }
-    //     else
-    //     {
-    //         itoa(propertyValueNum, propertyValueStr, 10);
-    //     }
-    //     Serial_printf("\n%s setting change received with value: %s\n", propertyKey, propertyValueStr);
-    //     acknowledgeSetting(propertyKey, propertyValueStr, version);
-    // }
-    // json_value_free(root_value);
+    acknowledgeSetting(propertyKey.c_str(), propertyValueStr.c_str(), version);
 }
 
 // callback for MQTT subscriptions
@@ -383,7 +347,7 @@ void readSensors()
 //////////////////////////////////////////////// SETUP ////////////////////////////////////////////////////////////
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     // uncomment this line to add a small delay to allow time for connecting serial moitor to get full debug output
     delay(5000);
