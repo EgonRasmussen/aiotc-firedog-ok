@@ -1,22 +1,14 @@
-/*
 // Read temperature and humidity data from an Arduino MKR1000 or MKR1010 device using a DHT11/DHT22 sensor.
 // The data is then sent to Azure IoT Central for visualizing via MQTT
 //
 // https://github.com/firedog1024/mkr1000-iotc/blob/master/mkr10x0_iotc/mkr10x0_iotc.ino
-*/
 
 #include <stdarg.h>
 #include <time.h>
 #include <SPI.h>
 #include <avr/dtostrf.h>
 #include <utility/wifi_drv.h>
-
-// are we compiling against the Arduino MKR1010
-#ifdef ARDUINO_SAMD_MKRWIFI1010
 #include <WiFiNINA.h>
-#define DEVICE_NAME "Arduino MKR1010"
-#endif
-
 #include <WiFiUdp.h>
 #include <RTCZero.h>
 #include <SimpleDHT.h>
@@ -24,7 +16,7 @@
 #include <Base64.h>
 #include <ArduinoJson.h>
 
-/*  You need to go into this file and change this line from:
+/*  You need to go into .pio/mkrwifi1010/PubSubClient/src/PubSubClient.h and change this line from:
       #define MQTT_MAX_PACKET_SIZE 128
     to:
       #define MQTT_MAX_PACKET_SIZE 2048
@@ -71,8 +63,8 @@ bool mqttConnected = false;
 time_t this_second = 0;
 time_t checkTime = 1300000000;
 
-#define TELEMETRY_SEND_INTERVAL 15000 // telemetry data sent every 5 seconds
-#define PROPERTY_SEND_INTERVAL 30000  // property data sent every 15 seconds
+#define TELEMETRY_SEND_INTERVAL 60000 // telemetry data sent every 60 seconds
+#define PROPERTY_SEND_INTERVAL 60000  // property data sent every 60 seconds
 #define SENSOR_READ_INTERVAL 2500     // read sensors every 2.5 seconds
 
 long lastTelemetryMillis = 0;
