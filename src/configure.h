@@ -4,9 +4,9 @@
 */ 
 
 // Azure IoT Central device information
-static const char PROGMEM iotc_scopeId[] = "0ne0092420A";
+static const char PROGMEM iotc_scopeId[] = "ScopeId";
 static const char PROGMEM iotc_deviceId[] = "MKRWiFi1010";
-static const char PROGMEM iotc_deviceKey[] = "UqbS6wPmb5k8QOkz1vn6qHUylwQf7aov+dM4xGJd+Dg=";
+static const char PROGMEM iotc_deviceKey[] = "DeviceKey";
 //static const char PROGMEM iotc_hubHost[] = "iotc-4f14026e-7a3c-4640-8918-7eb166d81b10.azure-devices.net";
 
 // Wi-Fi information
